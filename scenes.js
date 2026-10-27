@@ -1,0 +1,133 @@
+// ===== The 8 wastes (DOWNTIME) =====
+// To translate later: change the names and hints here only.
+const WASTES = {
+  D: { name: "Defects", hint: "Errors, rework, damage" },
+  O: { name: "Overproduction", hint: "Making more, or earlier, than needed" },
+  W: { name: "Waiting", hint: "Idle time for people, parts or information" },
+  N: { name: "Non-utilized talent", hint: "Skills and ideas not being used" },
+  T: { name: "Transportation", hint: "Unnecessary movement of materials" },
+  I: { name: "Inventory", hint: "More material than needed right now" },
+  M: { name: "Motion", hint: "Unnecessary movement of people" },
+  E: { name: "Extra processing", hint: "More work than the customer needs" },
+};
+
+// ===== Scenes =====
+// Hotspot x, y, w, h are % of the scene (0-100), measured from the top-left corner.
+// Placeholder positions for now. They will be matched to the artwork in Step 4.
+const SCENES = [
+  {
+    id: "elevator-site",
+    name: "Elevator Installation Site",
+    image: null, // Step 4: change to "images/elevator-site.png"
+    briefing:
+      "This is an elevator installation site. Find as many examples of waste as you can in 60 seconds. Click a spot where you see waste, then choose which of the 8 wastes it is.",
+    hotspots: [
+      {
+        id: "h1",
+        x: 4,
+        y: 6,
+        w: 16,
+        h: 22,
+        waste: "M",
+        label: "Tools left in the van",
+        why: "The installer walks to the van in the parking lot for tools that should be stored at the point of use.",
+      },
+      {
+        id: "h2",
+        x: 26,
+        y: 6,
+        w: 16,
+        h: 22,
+        waste: "W",
+        label: "Crew waiting for hoist access",
+        why: "Two installers stand idle because hoist time wasn't coordinated with the other trades on site.",
+      },
+      {
+        id: "h3",
+        x: 48,
+        y: 6,
+        w: 16,
+        h: 22,
+        waste: "I",
+        label: "Crates delivered weeks early",
+        why: "Unopened component crates fill the lobby weeks before they're needed, tying up cash and space and risking damage.",
+      },
+      {
+        id: "h4",
+        x: 70,
+        y: 6,
+        w: 16,
+        h: 22,
+        waste: "D",
+        label: "Scratched landing door",
+        why: "A damaged door panel was installed and must now be replaced, causing rework and a delayed handover.",
+      },
+      {
+        id: "h5",
+        x: 4,
+        y: 38,
+        w: 16,
+        h: 22,
+        waste: "T",
+        label: "Materials moved twice",
+        why: "Material was dropped at the far end of the site, then moved again by pallet jack to the shaft.",
+      },
+      {
+        id: "h6",
+        x: 26,
+        y: 38,
+        w: 16,
+        h: 22,
+        waste: "O",
+        label: "Brackets built for a shaft that isn't ready",
+        why: "Rail brackets were pre-assembled for the next shaft before it was released. That's work done earlier than needed.",
+      },
+      {
+        id: "h7",
+        x: 48,
+        y: 38,
+        w: 16,
+        h: 22,
+        waste: "E",
+        label: "Paper checklist retyped into an app",
+        why: "The same inspection data is recorded on paper and then entered again into the digital tool.",
+      },
+      {
+        id: "h8",
+        x: 70,
+        y: 38,
+        w: 16,
+        h: 22,
+        waste: "N",
+        label: "Senior fitter sorting paperwork",
+        why: "The most skilled installer is doing admin instead of the alignment and commissioning work only they can do.",
+      },
+      {
+        id: "h9",
+        x: 15,
+        y: 70,
+        w: 16,
+        h: 22,
+        waste: "W",
+        label: "Waiting on a missing part",
+        why: "Work stops because one part from the delivery is missing and nobody checked the delivery against the order.",
+      },
+      {
+        id: "h10",
+        x: 59,
+        y: 70,
+        w: 16,
+        h: 22,
+        waste: "M",
+        label: "Searching for parts in the pit",
+        why: "The installer bends and searches through scattered parts in the pit because nothing has a set location.",
+      },
+    ],
+    debrief: [
+      "Which wastes were hardest to spot, and why?",
+      "Which waste in this scene costs the most installation hours?",
+      "For one waste you found, what is the root cause, not just the symptom?",
+      "Where do you see these same wastes in your own work?",
+    ],
+  },
+];
