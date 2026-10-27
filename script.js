@@ -1,9 +1,9 @@
 // ===== Game settings =====
-const ROUND_SECONDS = 60; // length of the hunt
+const PART_SECONDS = 20; // time for each part
 const POINTS_CORRECT = 10; // right spot, right waste
 const POINTS_PARTIAL = 5; // right spot, wrong waste
-const REVEAL_DELAY = 1500; // ms to show missed spots before the results pop-up
-const SHOW_HOTSPOTS = false; // testing aid: outlines the spots. Set to false for real sessions.
+const REVEAL_DELAY = 1500; // ms to show missed spots before the part results
+const SHOW_HOTSPOTS = true; // testing aid. Set to false for real sessions.
 
 // ===== Page elements =====
 const sceneEl = document.getElementById("scene");
@@ -19,30 +19,41 @@ const popupTitleEl = document.getElementById("popup-title");
 const popupBodyEl = document.getElementById("popup-body");
 const popupBtn = document.getElementById("popup-btn");
 
-// Feedback message shown briefly over the scene
 const toastEl = document.createElement("div");
 toastEl.className = "toast hidden";
 sceneWrapEl.appendChild(toastEl);
 
 // ===== Game state =====
 let scene = SCENES[0];
-let timeLeft = ROUND_SECONDS;
+let partIndex = 0;
+let timeLeft = PART_SECONDS;
 let timerId = null;
 let revealTimeoutId = null;
 let toastTimeoutId = null;
-let active = false; // true only while the clock is running
-let pendingId = null; // hotspot waiting for a waste choice
+let active = false;
+let pendingId = null;
 let score = 0;
 let results = {}; // hotspot id -> { chosen, correct, points }
-let buttonMode = "start"; // "start" or "restart"
+let buttonMode = "menu"; // "start", "nextPart", "results", "menu"
 
 // ===== Helpers =====
-function foundCount() {
-  return Object.keys(results).length;
+function part() {
+  return scene.parts[partIndex];
 }
-
+function allHotspots() {
+  return scene.parts.flatMap((p) => p.hotspots);
+}
+function foundInPart() {
+  return part().hotspots.filter((h) => results[h.id]).length;
+}
 function maxScore() {
-  return scene.hotspots.length * POINTS_CORRECT;
+  return allHotspots().length * POINTS_CORRECT;
+}
+function partLabel() {
+  return `Part ${partIndex + 1} of ${scene.parts.length}: ${part().name}`;
+}
+function isLastPart() {
+  return partIndex === scene.parts.length - 1;
 }
 
 function wasteTag(code) {
@@ -52,7 +63,7 @@ function wasteTag(code) {
 function updateStatus() {
   timerEl.textContent = timeLeft;
   scoreEl.textContent = score;
-  foundCountEl.textContent = `${foundCount()} / ${scene.hotspots.length}`;
+  foundCountEl.textContent = `${foundInPart()} / ${part().hotspots.length}`;
 }
 
 function setMode(mode, text, disabled = false) {
@@ -70,7 +81,7 @@ function showPopup(step, title, html, buttonText) {
     popupBtn.textContent = buttonText;
     popupBtn.hidden = false;
   } else {
-    popupBtn.hidden = true; // the waste picker has its own buttons
+    popupBtn.hidden = true;
   }
   popupEl.classList.remove("hidden");
 }
@@ -86,24 +97,24 @@ function showToast(message, good) {
   toastTimeoutId = setTimeout(() => toastEl.classList.add("hidden"), 2200);
 }
 
-// ===== Build the scene: artwork + invisible hotspots =====
+// ===== Build the current part: artwork + hotspots =====
 function buildScene() {
   sceneEl.innerHTML = "";
 
-  if (scene.image) {
+  if (part().image) {
     const img = document.createElement("img");
-    img.src = scene.image;
-    img.alt = scene.name;
+    img.src = part().image;
+    img.alt = `${scene.name}: ${part().name}`;
     img.draggable = false;
     sceneEl.appendChild(img);
   } else {
     const ph = document.createElement("div");
     ph.className = "scene-placeholder";
-    ph.textContent = "Scene artwork goes here (Step 4)";
+    ph.textContent = `Artwork coming: ${part().name}`;
     sceneEl.appendChild(ph);
   }
 
-  scene.hotspots.forEach((h) => {
+  part().hotspots.forEach((h) => {
     const spot = document.createElement("div");
     spot.className = "hotspot";
     spot.dataset.id = h.id;
@@ -119,40 +130,14 @@ function buildScene() {
   });
 }
 
-// Color a hotspot once it's answered or revealed
 function markSpot(h, state) {
   const spot = sceneEl.querySelector(`.hotspot[data-id="${h.id}"]`);
   spot.classList.remove("debug");
-  spot.classList.add(state); // "found", "partial" or "missed"
+  spot.classList.add(state);
   spot.style.setProperty("--c", `var(--w-${h.waste.toLowerCase()})`);
   spot.innerHTML = wasteTag(h.waste);
 }
 
-// ===== Load a scene and show the briefing =====
-function loadScene(index = 0) {
-  clearInterval(timerId);
-  clearTimeout(revealTimeoutId);
-
-  scene = SCENES[index];
-  timeLeft = ROUND_SECONDS;
-  score = 0;
-  results = {};
-  pendingId = null;
-  active = false;
-
-  sceneLabelEl.textContent = `Scene: ${scene.name}`;
-  buildScene();
-  updateStatus();
-
-  showPopup(
-    "Waste Hunt",
-    scene.name,
-    `<p>${scene.briefing}</p>
-     <p>Right waste: <strong>+${POINTS_CORRECT}</strong> &nbsp;|&nbsp; Right spot, wrong waste: <strong>+${POINTS_PARTIAL}</strong></p>`,
-    "Start Hunt",
-  );
-  setMode("start", "Start Hunt");
-}
 // ===== Scene menu =====
 function showSceneMenu() {
   clearInterval(timerId);
@@ -161,13 +146,14 @@ function showSceneMenu() {
   pendingId = null;
 
   sceneLabelEl.textContent = "Choose a scene";
-  const buttons = SCENES.map(
-    (s, i) => `
-    <button class="scene-choice" data-index="${i}">
-      ${s.image ? `<img src="${s.image}" alt="">` : ""}
+  const buttons = SCENES.map((s, i) => {
+    const img = s.thumb || s.parts[0].image;
+    return `<button class="scene-choice" data-index="${i}">
+      ${img ? `<img src="${img}" alt="">` : ""}
       <span>${s.name}</span>
-    </button>`,
-  ).join("");
+      <small>${s.parts.length} parts</small>
+    </button>`;
+  }).join("");
 
   showPopup(
     "Waste Hunt",
@@ -177,6 +163,39 @@ function showSceneMenu() {
   );
   setMode("menu", "Choose a scene", true);
 }
+
+// ===== Load a scene (starts at Part 1) =====
+function loadScene(index) {
+  scene = SCENES[index];
+  partIndex = 0;
+  score = 0;
+  results = {};
+  loadPart(true);
+}
+
+// ===== Load a part and show its briefing =====
+function loadPart(first = false) {
+  clearInterval(timerId);
+  clearTimeout(revealTimeoutId);
+  timeLeft = PART_SECONDS;
+  pendingId = null;
+  active = false;
+
+  sceneLabelEl.textContent = `${scene.name}: Part ${partIndex + 1} of ${scene.parts.length}`;
+  buildScene();
+  updateStatus();
+
+  const count = part().hotspots.length;
+  const html = `
+    ${first ? `<p>${scene.briefing}</p>` : ""}
+    <p><strong>${part().name}:</strong> ${part().intro}</p>
+    <p>There are <strong>${count} wastes</strong> to find in ${PART_SECONDS} seconds.</p>
+    ${first ? `<p>Right waste: <strong>+${POINTS_CORRECT}</strong> &nbsp;|&nbsp; Right spot, wrong waste: <strong>+${POINTS_PARTIAL}</strong></p>` : ""}
+  `;
+  showPopup(partLabel(), first ? scene.name : part().name, html, "Start");
+  setMode("start", "Start");
+}
+
 // ===== Start the clock =====
 function startHunt() {
   active = true;
@@ -187,7 +206,7 @@ function startHunt() {
   timerId = setInterval(() => {
     timeLeft--;
     updateStatus();
-    if (timeLeft <= 0) endHunt();
+    if (timeLeft <= 0) endPart();
   }, 1000);
 }
 
@@ -200,13 +219,12 @@ sceneEl.addEventListener("click", (event) => {
     showMiss(event);
     return;
   }
-  if (results[spot.dataset.id]) return; // already found
+  if (results[spot.dataset.id]) return;
 
   pendingId = spot.dataset.id;
   openPicker();
 });
 
-// Small "X" where a click found no waste (no penalty)
 function showMiss(event) {
   const rect = sceneEl.getBoundingClientRect();
   const mark = document.createElement("div");
@@ -244,7 +262,7 @@ popupBodyEl.addEventListener("click", (event) => {
 
 // ===== Scoring with partial credit =====
 function scoreAnswer(code) {
-  const h = scene.hotspots.find((x) => x.id === pendingId);
+  const h = part().hotspots.find((x) => x.id === pendingId);
   const correct = code === h.waste;
   const points = correct ? POINTS_CORRECT : POINTS_PARTIAL;
 
@@ -263,62 +281,88 @@ function scoreAnswer(code) {
     correct,
   );
 
-  if (foundCount() === scene.hotspots.length) endHunt();
+  if (foundInPart() === part().hotspots.length) endPart();
 }
 
-// ===== End the hunt =====
-function endHunt() {
+// ===== End a part =====
+function endPart() {
   if (!active) return;
   clearInterval(timerId);
   active = false;
   pendingId = null;
   hidePopup();
 
-  // Reveal everything that was missed
-  scene.hotspots.forEach((h) => {
+  part().hotspots.forEach((h) => {
     if (!results[h.id]) markSpot(h, "missed");
   });
 
-  setMode("restart", "Choose Scene");
-  revealTimeoutId = setTimeout(showResults, REVEAL_DELAY);
+  setMode("wait", "Reviewing...", true);
+  revealTimeoutId = setTimeout(showPartResults, REVEAL_DELAY);
 }
 
-// ===== Results and debrief pop-up =====
-function showResults() {
-  const total = scene.hotspots.length;
-  const correct = Object.values(results).filter((r) => r.correct).length;
-  const partial = foundCount() - correct;
-  const missed = total - foundCount();
+// ===== Short results after each part (teaching moment) =====
+function resultRow(h, showPart = false) {
+  const r = results[h.id];
+  const answer = !r
+    ? "Missed"
+    : r.correct
+      ? "Correct"
+      : `Chose ${WASTES[r.chosen].name}`;
+  const rowClass = !r
+    ? "row-missed"
+    : r.correct
+      ? "row-correct"
+      : "row-partial";
+  const partName = showPart
+    ? scene.parts.find((p) => p.hotspots.includes(h)).name
+    : "";
+  return `<tr class="${rowClass}">
+    <td>${wasteTag(h.waste)}</td>
+    <td>${showPart ? `<small>${partName}</small><br>` : ""}<strong>${h.label}</strong><br><small>${h.why}</small></td>
+    <td>${answer}</td>
+    <td>${r ? r.points : 0}</td>
+  </tr>`;
+}
 
-  const rows = scene.hotspots
-    .map((h) => {
-      const r = results[h.id];
-      const answer = !r
-        ? "Missed"
-        : r.correct
-          ? "Correct"
-          : `Chose ${WASTES[r.chosen].name}`;
-      const rowClass = !r
-        ? "row-missed"
-        : r.correct
-          ? "row-correct"
-          : "row-partial";
-      return `<tr class="${rowClass}">
-      <td>${wasteTag(h.waste)}</td>
-      <td><strong>${h.label}</strong><br><small>${h.why}</small></td>
-      <td>${answer}</td>
-      <td>${r ? r.points : 0}</td>
-    </tr>`;
-    })
+function showPartResults() {
+  const rows = part()
+    .hotspots.map((h) => resultRow(h))
     .join("");
+  const nextText = isLastPart()
+    ? "See Final Results"
+    : `Next: Part ${partIndex + 2}`;
 
+  showPopup(
+    partLabel(),
+    `${part().name} complete`,
+    `
+    <p>Found <strong>${foundInPart()} of ${part().hotspots.length}</strong>. Running score: <strong>${score}</strong></p>
+    <table class="results-table">
+      <thead><tr><th>Waste</th><th>What was there</th><th>Your answer</th><th>Pts</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `,
+    nextText,
+  );
+  setMode(isLastPart() ? "results" : "nextPart", nextText);
+}
+
+// ===== Final results and debrief =====
+function showResults() {
+  const spots = allHotspots();
+  const correct = Object.values(results).filter((r) => r.correct).length;
+  const found = Object.keys(results).length;
+  const partial = found - correct;
+  const missed = spots.length - found;
+
+  const rows = spots.map((h) => resultRow(h, true)).join("");
   const debrief = scene.debrief.map((q) => `<li>${q}</li>`).join("");
 
   showPopup(
-    "Waste Hunt",
-    "Hunt complete: results",
+    scene.name,
+    "Scene complete: results",
     `
-    <p>Score: <strong>${score} / ${maxScore()}</strong> in ${ROUND_SECONDS - timeLeft} seconds.</p>
+    <p>Score: <strong>${score} / ${maxScore()}</strong></p>
     <p>Correct: <strong>${correct}</strong> &nbsp;|&nbsp; Right spot, wrong waste: <strong>${partial}</strong> &nbsp;|&nbsp; Missed: <strong>${missed}</strong></p>
     <table class="results-table">
       <thead><tr><th>Waste</th><th>What was there</th><th>Your answer</th><th>Pts</th></tr></thead>
@@ -329,17 +373,23 @@ function showResults() {
   `,
     "Choose Scene",
   );
+  setMode("menu", "Choose Scene");
 }
 
 // ===== Both buttons share one handler =====
 function handleMainButton() {
   if (buttonMode === "start") startHunt();
-  else showSceneMenu();
+  else if (buttonMode === "nextPart") {
+    partIndex++;
+    loadPart();
+  } else if (buttonMode === "results") showResults();
+  else if (buttonMode === "menu") showSceneMenu();
 }
 
 startBtn.addEventListener("click", handleMainButton);
 popupBtn.addEventListener("click", handleMainButton);
-// ===== Testing aid: log click position as % (only when SHOW_HOTSPOTS is true) =====
+
+// ===== Testing aid: log click position as % =====
 if (SHOW_HOTSPOTS) {
   sceneEl.addEventListener("click", (event) => {
     const rect = sceneEl.getBoundingClientRect();
@@ -348,5 +398,6 @@ if (SHOW_HOTSPOTS) {
     console.log(`Clicked at x: ${x}, y: ${y}`);
   });
 }
+
 // ===== Run on page load =====
 showSceneMenu();

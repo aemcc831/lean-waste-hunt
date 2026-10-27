@@ -481,3 +481,7 @@ body {
   object-fit: cover;
   border-radius: 5px;
 }
+.scene-choice small {
+  color: var(--muted);
+  font-weight: 400;
+}
