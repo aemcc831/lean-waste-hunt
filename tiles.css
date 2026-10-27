@@ -1,0 +1,35 @@
+
+/* ===== Step 7: tile board (scene split into panels) ===== */
+.scene {
+  aspect-ratio: auto;          /* height now comes from the panels */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  background: #fff;
+  cursor: default;
+}
+.scene:empty { aspect-ratio: 3 / 2; }   /* keeps space for the menu pop-up */
+
+.tile-row { display: flex; gap: 4px; }
+
+.tile {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+}
+.tile img { display: block; width: 100%; height: auto; }
+.tile:hover { border-color: var(--primary); }
+
+.tile-badge { position: absolute; top: 6px; right: 6px; }
+
+.tile.found   { border: 4px solid var(--c); cursor: default; }
+.tile.partial { border: 4px dashed var(--c); cursor: default; }
+.tile.found img,
+.tile.partial img { opacity: 0.6; }
+.tile.missed  { border: 4px dashed #d93a3a; animation: pulse 1s ease-in-out 3; }
