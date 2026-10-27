@@ -122,7 +122,7 @@ body {
 .scene {
   position: relative; /* hotspots will be placed by % coordinates */
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3/2;
   background: #e9edf3;
   border: 2px solid var(--border);
   border-radius: 10px;

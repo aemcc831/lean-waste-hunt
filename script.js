@@ -3,7 +3,7 @@ const ROUND_SECONDS = 60; // length of the hunt
 const POINTS_CORRECT = 10; // right spot, right waste
 const POINTS_PARTIAL = 5; // right spot, wrong waste
 const REVEAL_DELAY = 1500; // ms to show missed spots before the results pop-up
-const SHOW_HOTSPOTS = true; // testing aid: outlines the spots. Set to false for real sessions.
+const SHOW_HOTSPOTS = false; // testing aid: outlines the spots. Set to false for real sessions.
 
 // ===== Page elements =====
 const sceneEl = document.getElementById("scene");
@@ -313,6 +313,14 @@ function handleMainButton() {
 
 startBtn.addEventListener("click", handleMainButton);
 popupBtn.addEventListener("click", handleMainButton);
-
+// ===== Testing aid: log click position as % (only when SHOW_HOTSPOTS is true) =====
+if (SHOW_HOTSPOTS) {
+  sceneEl.addEventListener("click", (event) => {
+    const rect = sceneEl.getBoundingClientRect();
+    const x = Math.round(((event.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((event.clientY - rect.top) / rect.height) * 100);
+    console.log(`Clicked at x: ${x}, y: ${y}`);
+  });
+}
 // ===== Run on page load =====
 loadScene(0);
