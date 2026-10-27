@@ -153,7 +153,30 @@ function loadScene(index = 0) {
   );
   setMode("start", "Start Hunt");
 }
+// ===== Scene menu =====
+function showSceneMenu() {
+  clearInterval(timerId);
+  clearTimeout(revealTimeoutId);
+  active = false;
+  pendingId = null;
 
+  sceneLabelEl.textContent = "Choose a scene";
+  const buttons = SCENES.map(
+    (s, i) => `
+    <button class="scene-choice" data-index="${i}">
+      ${s.image ? `<img src="${s.image}" alt="">` : ""}
+      <span>${s.name}</span>
+    </button>`,
+  ).join("");
+
+  showPopup(
+    "Waste Hunt",
+    "Choose a scene",
+    `<div class="scene-grid">${buttons}</div>`,
+    null,
+  );
+  setMode("menu", "Choose a scene", true);
+}
 // ===== Start the clock =====
 function startHunt() {
   active = true;
@@ -214,6 +237,9 @@ function openPicker() {
 popupBodyEl.addEventListener("click", (event) => {
   const choice = event.target.closest(".waste-choice");
   if (choice && pendingId) scoreAnswer(choice.dataset.waste);
+
+  const sceneBtn = event.target.closest(".scene-choice");
+  if (sceneBtn) loadScene(Number(sceneBtn.dataset.index));
 });
 
 // ===== Scoring with partial credit =====
@@ -253,7 +279,7 @@ function endHunt() {
     if (!results[h.id]) markSpot(h, "missed");
   });
 
-  setMode("restart", "Play Again");
+  setMode("restart", "Choose Scene");
   revealTimeoutId = setTimeout(showResults, REVEAL_DELAY);
 }
 
@@ -301,14 +327,14 @@ function showResults() {
     <h3>Debrief questions</h3>
     <ol>${debrief}</ol>
   `,
-    "Play Again",
+    "Choose Scene",
   );
 }
 
 // ===== Both buttons share one handler =====
 function handleMainButton() {
   if (buttonMode === "start") startHunt();
-  else loadScene(0);
+  else showSceneMenu();
 }
 
 startBtn.addEventListener("click", handleMainButton);
@@ -323,4 +349,4 @@ if (SHOW_HOTSPOTS) {
   });
 }
 // ===== Run on page load =====
-loadScene(0);
+showSceneMenu();
