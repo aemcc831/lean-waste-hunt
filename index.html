@@ -7,8 +7,74 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Waste Hunt</h1>
-    <p>Setup test: if you can see this, Step 1 works.</p>
+    <!-- HEADER -->
+    <header class="app-header">
+      <h1>Waste Hunt</h1>
+      <span id="scene-label" class="scene-label"
+        >Scene: Elevator Installation Site</span
+      >
+    </header>
+
+    <main class="container">
+      <!-- STATUS BAR -->
+      <section class="status-bar">
+        <div class="status-item">
+          <span class="status-title">Time left</span>
+          <span id="timer" class="status-value">60</span>
+        </div>
+        <div class="status-item">
+          <span class="status-title">Score</span>
+          <span id="score" class="status-value">0</span>
+        </div>
+        <div class="status-item">
+          <span class="status-title">Wastes found</span>
+          <span id="found-count" class="status-value">0 / 0</span>
+        </div>
+        <button id="start-btn" class="btn-primary">Start Hunt</button>
+      </section>
+
+      <!-- SCENE + LEGEND -->
+      <section class="play-area">
+        <!-- Scene (image and hotspots go here) -->
+        <div class="scene-wrap">
+          <div id="scene" class="scene">
+            <div class="scene-placeholder">
+              Scene artwork goes here (Step 4)
+            </div>
+          </div>
+
+          <!-- Pop-up: briefing, waste picker, results -->
+          <div id="popup" class="popup">
+            <div class="popup-card">
+              <span id="popup-step" class="popup-step">Waste Hunt</span>
+              <h2 id="popup-title">Find the waste</h2>
+              <div id="popup-body" class="popup-body">
+                <p>
+                  Layout test: this pop-up will hold the briefing, the waste
+                  picker and the results.
+                </p>
+              </div>
+              <button id="popup-btn" class="btn-primary">Start Hunt</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOWNTIME legend -->
+        <aside class="legend">
+          <h2>The 8 Wastes</h2>
+          <ul>
+            <li><span class="tag w-d">D</span>Defects</li>
+            <li><span class="tag w-o">O</span>Overproduction</li>
+            <li><span class="tag w-w">W</span>Waiting</li>
+            <li><span class="tag w-n">N</span>Non-utilized talent</li>
+            <li><span class="tag w-t">T</span>Transportation</li>
+            <li><span class="tag w-i">I</span>Inventory</li>
+            <li><span class="tag w-m">M</span>Motion</li>
+            <li><span class="tag w-e">E</span>Extra processing</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
 
     <script src="scenes.js"></script>
     <script src="script.js"></script>
