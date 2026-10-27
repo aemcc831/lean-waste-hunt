@@ -133,6 +133,7 @@ function showSceneMenu() {
   );
   setMode("menu", "Choose a scene", true);
 }
+popupEl.classList.add("menu");
 
 // ===== Load a scene and show the briefing =====
 function loadScene(index) {
@@ -142,7 +143,7 @@ function loadScene(index) {
   results = {};
   pendingN = null;
   active = false;
-
+  popupEl.classList.remove("menu");
   sceneLabelEl.textContent = `Scene: ${scene.name}`;
   buildScene();
   updateStatus();
